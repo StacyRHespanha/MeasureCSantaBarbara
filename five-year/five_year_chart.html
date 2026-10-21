@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measure C Five-Year Outlook</title>
+<style>
+.viz-root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface-1: #fcfcfb; --text-primary: #0b0b0b; --text-secondary: #52514e;
+  --text-muted: #898781; --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --node-neutral: #52514e;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+    --text-muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --node-neutral: #c3c2b7;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  }
+}
+:root[data-theme="dark"] .viz-root {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface-1: #1a1a19; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+  --text-muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --node-neutral: #c3c2b7;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+}
+html, body { margin: 0; }
+body { background: #f9f9f7; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) body { background: #0d0d0d; } }
+:root[data-theme="dark"] body { background: #0d0d0d; }
+.viz-root { background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; padding: 24px 16px 40px; box-sizing: border-box; }
+.wrap { max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+h2 { font-size: 18px; font-weight: 600; margin: 4px 0 6px; line-height: 1.3; }
+.sub, .panel-sub { color: var(--text-secondary); font-size: 14px; margin: 0 0 12px; line-height: 1.45; }
+.panel-sub { font-size: 13px; margin-bottom: 6px; }
+.legend-and-note { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 12px 28px; align-items: start; margin-bottom: 4px; }
+@media (max-width: 760px) { .legend-and-note { grid-template-columns: 1fr; } }
+.callout { font-size: 13px; color: var(--text-primary); margin: 18px 0 0; padding: 10px 14px; background: var(--surface-1); border: 1px solid var(--border); border-left: 4px solid var(--series-2); border-radius: 6px; line-height: 1.5; }
+.rev-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; fill: var(--text-primary); paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; }
+.ssmp-block { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.ssmp-toggle { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.ssmp-toggle input { width: 18px; height: 18px; }
+.ssmp-info { font-size: 13px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 20px; line-height: 1.5; }
+.ssmp-info li { margin-bottom: 4px; }
+.ssmp-info strong { color: var(--text-primary); font-weight: 600; }
+.credit { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; padding: 8px 12px; border-left: 3px solid var(--axis); line-height: 1.45; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.legend-row { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+.legend-row .title { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.legend-row svg { vertical-align: -3px; margin-right: 6px; flex: none; }
+#legend-bottom, #legend-cats { flex-direction: column; align-items: flex-start; gap: 6px; }
+#legend-bottom .li, #legend-cats .li { display: flex; align-items: flex-start; gap: 4px; line-height: 1.4; }
+#legend-bottom .li svg, #legend-cats .li svg { margin-top: 2px; }
+#legend-bottom .txt, #legend-cats .txt { display: block; }
+#legend-bottom strong { color: var(--text-primary); font-weight: 600; }
+.controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; font-size: 14px; }
+.controls label { cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.controls input { width: 16px; height: 16px; }
+button { font: inherit; font-size: 13px; color: var(--text-primary); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+button:hover { background: var(--grid); }
+svg.chart { display: block; width: 100%; height: auto; min-width: 760px; }
+.chart-wrap { overflow-x: auto; }
+.axis text { font-size: 11px; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+.axis path, .axis line { stroke: var(--axis); }
+.grid line { stroke: var(--grid); }
+.grid path { display: none; }
+.lbl { font-size: 12px; fill: var(--text-primary); font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; }
+.lbl-sec { font-size: 11px; fill: var(--text-secondary); paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; }
+.seg, .bal, .rev-hit { cursor: pointer; }
+.tooltip { position: fixed; pointer-events: none; z-index: 10; max-width: 360px; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-size: 12px; line-height: 1.45; box-shadow: 0 4px 16px rgba(0,0,0,.12); opacity: 0; }
+.tooltip .t { font-weight: 600; margin-bottom: 4px; }
+.tooltip .v { font-size: 14px; font-weight: 600; }
+.tooltip .m { color: var(--text-secondary); margin-top: 4px; }
+.tooltip .c { display: inline-block; font-size: 11px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+.notes { font-size: 13px; color: var(--text-secondary); margin: 12px 0 0; line-height: 1.5; padding-left: 20px; }
+.notes li { margin-bottom: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 8px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--text-muted); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hidden { display: none; }
+hr.sep { border: none; border-top: 1px solid var(--grid); margin: 40px 0 28px; }
+
+.static .interactive-only, .static #toggle-table { display: none !important; }
+.static .ssmp-toggle input { display: none; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+<div class="wrap">
+  <h1 id="title"></h1>
+  <p class="sub">Top: each year's Measure C commitments, stacked, compared with expected revenue (dashed line). Bottom: the running total that would need to be cut or deferred, starting from past commitments not yet backed by money in the fund. In $ millions. <span class="interactive-only">Hover any shape for its source and method.</span></p>
+  <p class="credit" id="credit"></p>
+  <div class="ssmp-block">
+    <label class="ssmp-toggle"><input type="checkbox" id="ssmp-toggle"> Show the charts with the State Street Master Plan's Option 1 bond (hypothetical)</label>
+    <ul class="ssmp-info">
+      <li><strong>What it is:</strong> the State Street Master Plan (SSMP) lists two ways to borrow $60–70M for construction (Plan p. 177). Option 1 is a lease revenue bond repaid from Measure C, which Council can approve without a public vote. Option 2 is a general obligation bond, which needs two-thirds voter approval and is repaid by a property tax. <span class="interactive-only">This toggle adds Option 1.</span></li>
+      <li><strong>Annual cost:</strong> about $3.7–4.5M a year for 30 years, drawn at the $4.1M midpoint. This is my calculation using the City's own assumptions for General Fund-backed borrowing: 4.5% interest, 30 years, level payments, and 4% issuance costs (NHA Advisors, Finance Committee, Feb 24, 2026, p. 16). For comparison, the City's 2024 police station bonds cost about 3.9%, which would put a $65M bond at about $3.9M a year.</li>
+      <li><strong>Timing:</strong> payments start in FY2028, consistent with the Plan's call for construction to begin within 18 months of its adoption on Sept 1, 2026. The first year's payment could be smaller, or deferred if interest is borrowed during construction, as with the police station bonds.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="controls">
+      <span></span>
+      <button id="toggle-table" type="button">Show as table</button>
+    </div>
+    <div id="charts">
+      <h2>Each year: adopted and requested commitments compared with expected revenue</h2>
+      <p class="panel-sub">Labels above each column show the difference from expected revenue. A negative number is the amount the budget process would need to cut or defer that year. Solid shapes are adopted or documented amounts; lighter outlined shapes are draft requests; faint dotted shapes are assumptions; hatched shapes are the hypothetical SSMP bond.</p>
+      <div class="legend-and-note">
+        <div class="legend-row" id="legend-cats"><span class="title">Commitments</span></div>
+        <p class="callout" id="callout"></p>
+      </div>
+      <div class="chart-wrap" id="top"></div>
+      <hr class="sep">
+      <h2>Running total: how much would need to be cut or deferred to keep commitments within revenue</h2>
+      <p class="panel-sub">The bars show what would build up if current plans went ahead unchanged: staff's streets requests as drafted, and other spending repeating its FY2027 adopted levels each year. They measure, cumulatively, how much the budget process would need to cut or defer. The total starts from past commitments not yet backed by money in the fund. <strong>NOTE:</strong> Each year's budget process is expected to make cuts and deferrals that keep this mismatch from growing to the amounts shown.</p>
+      <div class="legend-row" id="legend-bottom"></div>
+      <div class="chart-wrap" id="bottom"></div>
+    </div>
+    <div id="table-wrap" class="hidden"></div>
+    <ul class="notes" id="notes"></ul>
+  </div>
+</div>
+<div class="tooltip" id="tip" role="tooltip"></div>
+</div>
+
+<script src="five_year_data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function () {
+  const STATIC = new URLSearchParams(location.search).has('static');
+  if (STATIC) document.documentElement.classList.add('static');
+  const D = window.FIVE_YEAR_DATA;
+  const root = document.querySelector('.viz-root');
+  const css = (v) => getComputedStyle(root).getPropertyValue(v).trim();
+  const slotColor = (s) => css('--series-' + s);
+  const fmt = (v) => (v < 0 ? '−' : '') + '$' + Math.abs(v).toFixed(1) + 'M';
+  const fmt2 = (v) => (v < 0 ? '−' : '') + '$' + Math.abs(v).toFixed(2) + 'M';
+  const CERT = { reported: 'Adopted / documented', draft: 'Draft request (documented)', assumed: 'Assumed (FY2027 level)', estimated: 'My estimate', hypothetical: 'Hypothetical' };
+  const tip = document.getElementById('tip');
+  let showSSMP = location.hash === '#ssmp';
+  document.getElementById('ssmp-toggle').checked = showSSMP;
+  if (STATIC) {
+    const lab = document.querySelector('.ssmp-toggle');
+    lab.lastChild.textContent = showSSMP
+      ? ' This version includes the State Street Master Plan\'s Option 1 bond (hypothetical).'
+      : ' This version shows current plans only. Figure 2 adds the State Street Master Plan\'s Option 1 bond (hypothetical).';
+  }
+
+  document.getElementById('title').textContent = D.title;
+  document.getElementById('credit').textContent = D.credit;
+  document.getElementById('callout').textContent = D.callout;
+  const notes = document.getElementById('notes');
+  D.notes.forEach((n) => { const li = document.createElement('li'); li.textContent = n; notes.appendChild(li); });
+
+  // ---- tooltip
+  function showTip(html, ev) { tip.innerHTML = html; tip.style.opacity = 1; moveTip(ev); }
+  function moveTip(ev) {
+    const p = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = ev.clientX + p, y = ev.clientY + p;
+    if (x + w > window.innerWidth - 8) x = ev.clientX - w - p;
+    if (y + h > window.innerHeight - 8) y = ev.clientY - h - p;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hideTip() { tip.style.opacity = 0; }
+
+  // ---- computed series
+  const years = D.years;
+  function yearTotals(i) {
+    let documented = 0, assumed = 0;
+    D.categories.forEach((c) => { const v = c.values[i]; if (v.certainty === 'assumed') assumed += v.value; else documented += v.value; });
+    const ssmp = D.ssmp.values[i].value;
+    return { documented, assumed, ssmp };
+  }
+  function balances() {
+    let bd = D.startBalance.value, ba = bd, bs = bd;
+    return years.map((y, i) => {
+      const t = yearTotals(i), r = D.revenue[i].value;
+      bd += r - t.documented; ba += r - t.documented - t.assumed; bs += r - t.documented - t.assumed - t.ssmp;
+      return { year: y, documented: bd, assumed: ba, ssmp: bs };
+    });
+  }
+
+  // ---- patterns and legends
+  function defs(svg, color, id) {
+    const d = svg.append('defs');
+    const p = d.append('pattern').attr('id', id || 'hatch').attr('patternUnits', 'userSpaceOnUse').attr('width', 6).attr('height', 6).attr('patternTransform', 'rotate(45)');
+    p.append('rect').attr('width', 6).attr('height', 6).attr('fill', css('--surface-1'));
+    p.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 6).attr('stroke', color || css('--node-neutral')).attr('stroke-width', 2);
+  }
+  function styleFor(cert, color) {
+    switch (cert) {
+      case 'reported': return { fill: color, fo: 0.85, stroke: 'none', dash: null };
+      case 'draft': return { fill: color, fo: 0.5, stroke: color, dash: null };
+      case 'assumed': return { fill: color, fo: 0.14, stroke: color, dash: '1.5 2.5' };
+      case 'estimated': return { fill: color, fo: 0.3, stroke: color, dash: '4 3' };
+      case 'hypothetical': return { fill: 'url(#hatch)', fo: 1, stroke: css('--series-8'), dash: null };
+    }
+  }
+  function swatch(cert, color, w) {
+    const s = styleFor(cert, color);
+    const fill = cert === 'hypothetical' ? 'none' : s.fill;
+    const hatch = cert === 'hypothetical' ? '<path d="M3,13 L13,3 M9,13 L19,3 M15,13 L25,3" stroke="' + s.stroke + '" stroke-width="1.5"/>' : '';
+    return '<svg width="' + (w || 26) + '" height="14"><rect x="1" y="1" width="' + ((w || 26) - 2) + '" height="12" rx="2" fill="' + fill + '" fill-opacity="' + s.fo + '"' +
+      (s.stroke !== 'none' ? ' stroke="' + s.stroke + '" stroke-width="1.2"' + (s.dash ? ' stroke-dasharray="' + s.dash + '"' : '') : '') + '/>' + hatch + '</svg>';
+  }
+  function legends() {
+    const lc = document.getElementById('legend-cats');
+    lc.querySelectorAll('span.item').forEach((e) => e.remove());
+    D.categories.forEach((c) => { const s = document.createElement('span'); s.className = 'item li'; s.innerHTML = swatch('reported', slotColor(c.slot), 26) + '<span class="txt">' + c.label + '</span>'; lc.appendChild(s); });
+    { const s = document.createElement('span'); s.className = 'item li';
+      s.innerHTML = swatch('hypothetical', css('--series-8'), 26) + '<span class="txt">State Street Master Plan Option 1 bond (hypothetical; ' + (STATIC ? (showSSMP ? 'included in this version' : 'shown in Figure 2') : 'shown when the box above is checked') + ')</span>'; lc.appendChild(s); }
+    const red = css('--series-8');
+    const lb = document.getElementById('legend-bottom');
+    lb.innerHTML = '<span class="title">How to read the bars</span>';
+    const items = [
+      ['<svg width="26" height="14"><rect x="1" y="1" width="24" height="12" rx="2" fill="' + red + '" fill-opacity="0.3" stroke="' + red + '" stroke-width="1.2" stroke-dasharray="4 3"/></svg>', '<strong>Starting point, July 1, 2026 (my estimate):</strong> past commitments to projects that are not yet covered by Measure C taxes already collected, so they will be paid from future years\' taxes'],
+      ['<svg width="26" height="14"><rect x="1" y="1" width="24" height="12" rx="2" fill="' + red + '" fill-opacity="0.85"/></svg>', '<strong>Documented amounts:</strong> the gap between expected revenue and the commitments with published figures (the FY2027 adopted budget, police station bond payments, and staff\'s draft streets requests for FY2028–2032)'],
+      ['<svg width="26" height="14"><rect x="1" y="1" width="24" height="12" rx="2" fill="' + red + '" fill-opacity="0.14" stroke="' + red + '" stroke-width="1.2" stroke-dasharray="1.5 2.5"/></svg>', '<strong>Adds FY2027-level assumptions:</strong> the further gap if shelter operations, other projects (fire, library, parks, facilities, equipment) and City Administration items continue at their FY2027 adopted amounts, which have no published figures for later years'],
+      ['<svg width="26" height="14"><rect x="1" y="1" width="24" height="12" rx="2" fill="none" stroke="' + red + '" stroke-width="1.2"/><path d="M3,13 L13,3 M9,13 L19,3 M15,13 L25,3" stroke="' + red + '" stroke-width="1.5"/></svg>', '<strong>Adds the hypothetical SSMP bond:</strong> the further gap if the State Street Master Plan\'s Option 1 bond is issued (see the box above)']
+    ];
+    items.forEach(([sw, txt]) => { const s = document.createElement('span'); s.className = 'li'; s.innerHTML = sw + '<span class="txt">' + txt + '</span>'; lb.appendChild(s); });
+  }
+
+  const segHTML = (title, v, cert, extra) =>
+    '<div class="t">' + title + '</div><div class="v">' + fmt2(v.value) + (v.low != null ? ' (range ' + fmt2(v.low) + '–' + fmt2(v.high) + ')' : '') +
+    '<span class="c">' + CERT[cert] + '</span></div>' + (extra || '') + (v.basis ? '<div class="m">' + v.basis + '</div>' : '') + (v.ref ? '<div class="m">Source: ' + v.ref + '</div>' : '');
+
+  // ---- layout shared by both panels
+  const W = 1060, M = { left: 64, right: 24 };
+  const xKeys = ['start'].concat(years);
+  const x = d3.scaleBand().domain(xKeys).range([M.left, W - M.right]).paddingInner(0.32).paddingOuter(0.15);
+  const xLabel = (k) => k === 'start' ? 'Start (July 1, 2026)' : k + (k === 'FY2027' ? ' (adopted)' : '');
+
+  function renderTop() {
+    const H = 400, T = 28, B = 34;
+    const host = document.getElementById('top'); host.innerHTML = '';
+    const svg = d3.select(host).append('svg').attr('class', 'chart').attr('viewBox', [0, 0, W, H])
+      .attr('role', 'img').attr('aria-label', 'Stacked columns of Measure C commitments by year compared with expected revenue. Use "Show as table" for the data.');
+    defs(svg, css('--series-8'), 'hatch');
+    const maxStack = d3.max(years, (y, i) => { const t = yearTotals(i); return t.documented + t.assumed + (showSSMP ? D.ssmp.values[i].value : 0); });
+    const y = d3.scaleLinear().domain([0, Math.max(maxStack, d3.max(D.revenue, (r) => r.value)) * 1.08]).nice().range([H - B, T]);
+    svg.append('g').attr('class', 'grid').attr('transform', 'translate(' + M.left + ',0)').call(d3.axisLeft(y).ticks(6).tickSize(-(W - M.left - M.right)).tickFormat(''));
+    svg.append('g').attr('class', 'axis').attr('transform', 'translate(' + M.left + ',0)').call(d3.axisLeft(y).ticks(6).tickFormat((d) => '$' + d + 'M')).call((g) => g.select('.domain').remove());
+    svg.append('g').attr('class', 'axis').attr('transform', 'translate(0,' + (H - B) + ')').call(d3.axisBottom(x).tickFormat(xLabel).tickSizeOuter(0));
+
+    // start column note
+    svg.append('text').attr('class', 'lbl-sec').attr('x', x('start') + x.bandwidth() / 2).attr('y', y(8)).attr('text-anchor', 'middle')
+      .text('See running').append('tspan').attr('x', x('start') + x.bandwidth() / 2).attr('dy', '1.2em').text('total below');
+
+    years.forEach((yr, i) => {
+      let acc = 0;
+      const layers = D.categories.map((c) => ({ c, v: c.values[i], color: slotColor(c.slot), title: c.label + ', ' + yr }));
+      if (showSSMP && D.ssmp.values[i].value > 0) layers.push({ c: D.ssmp, v: D.ssmp.values[i], color: null, title: D.ssmp.label + ', ' + yr });
+      layers.forEach((L) => {
+        const h0 = acc, h1 = acc + L.v.value; acc = h1;
+        if (L.v.value <= 0) return;
+        const s = styleFor(L.v.certainty, L.color);
+        svg.append('rect').attr('class', 'seg')
+          .attr('x', x(yr)).attr('width', x.bandwidth())
+          .attr('y', y(h1) + 1).attr('height', Math.max(0, y(h0) - y(h1) - 2)).attr('rx', 2)
+          .attr('fill', s.fill).attr('fill-opacity', s.fo)
+          .attr('stroke', s.stroke).attr('stroke-width', s.stroke === 'none' ? 0 : 1.2).attr('stroke-dasharray', s.dash)
+          .on('mouseenter', (ev) => showTip(segHTML(L.title, L.v, L.v.certainty), ev)).on('mousemove', moveTip).on('mouseleave', hideTip);
+      });
+      // revenue marker
+      const r = D.revenue[i];
+      const x0 = x(yr) - 6, x1 = x(yr) + x.bandwidth() + 6;
+      svg.append('line').attr('x1', x0).attr('x2', x1).attr('y1', y(r.value)).attr('y2', y(r.value))
+        .attr('stroke', css('--text-primary')).attr('stroke-width', 3).attr('stroke-dasharray', '9 4');
+      svg.append('rect').attr('class', 'rev-hit').attr('x', x0).attr('width', x1 - x0).attr('y', y(r.value) - 6).attr('height', 12).attr('fill', 'transparent')
+        .on('mouseenter', (ev) => showTip(segHTML('Expected Measure C revenue, ' + yr, r, 'estimated', '<div class="m">' + r.cityFigure + '</div>'), ev))
+        .on('mousemove', moveTip).on('mouseleave', hideTip);
+      if (i === 0) {
+        svg.append('text').attr('class', 'rev-label').attr('x', x0 - 6).attr('y', y(r.value) + 4).attr('text-anchor', 'end').text('EXPECTED REVENUE');
+      }
+      // left-over label
+      const left = r.value - acc;
+      svg.append('text').attr('class', 'lbl').attr('x', x(yr) + x.bandwidth() / 2).attr('y', y(Math.max(acc, r.value)) - 8)
+        .attr('text-anchor', 'middle').style('font-weight', 600).text((left >= 0 ? '+' : '') + fmt(left).replace('$', '$'));
+    });
+  }
+
+  function renderBottom() {
+    const H = 300, T = 16, B = 30;
+    const host = document.getElementById('bottom'); host.innerHTML = '';
+    const svg = d3.select(host).append('svg').attr('class', 'chart').attr('viewBox', [0, 0, W, H])
+      .attr('role', 'img').attr('aria-label', 'Running total of Measure C commitments beyond expected revenue, by year: the amount that would need to be cut or deferred.');
+    const red = css('--series-8');
+    defs(svg, red, 'hatch-red');
+    const bal = balances();
+    const minV = d3.min(bal, (b) => showSSMP ? b.ssmp : b.assumed);
+    const y = d3.scaleLinear().domain([Math.min(minV, D.startBalance.value) * 1.08, 5]).nice().range([H - B, T]);
+    svg.append('g').attr('class', 'grid').attr('transform', 'translate(' + M.left + ',0)').call(d3.axisLeft(y).ticks(6).tickSize(-(W - M.left - M.right)).tickFormat(''));
+    svg.append('g').attr('class', 'axis').attr('transform', 'translate(' + M.left + ',0)').call(d3.axisLeft(y).ticks(6).tickFormat((d) => (d < 0 ? '−$' + (-d) : '$' + d) + 'M')).call((g) => g.select('.domain').remove());
+    svg.append('line').attr('x1', M.left).attr('x2', W - M.right).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', css('--axis')).attr('stroke-width', 1.5);
+    svg.append('g').attr('class', 'axis').attr('transform', 'translate(0,' + (H - B) + ')').call(d3.axisBottom(x).tickFormat(xLabel).tickSize(0)).call((g) => g.select('.domain').remove());
+    const n = css('--node-neutral');
+
+    function bar(key, from, to, cert, html) {
+      if (Math.abs(to - from) < 0.005) return;
+      const s = cert === 'documented' ? { fill: red, fo: 0.85, stroke: 'none', dash: null }
+        : cert === 'hypothetical' ? { fill: 'url(#hatch-red)', fo: 1, stroke: red, dash: null }
+        : styleFor(cert, red);
+      const top = Math.max(from, to), bot = Math.min(from, to);
+      svg.append('rect').attr('class', 'bal').attr('x', x(key) + 4).attr('width', x.bandwidth() - 8)
+        .attr('y', y(top) + (from === 0 ? 0 : 1)).attr('height', Math.max(1, y(bot) - y(top) - (from === 0 ? 1 : 2))).attr('rx', 2)
+        .attr('fill', s.fill).attr('fill-opacity', s.fo).attr('stroke', s.stroke).attr('stroke-width', s.stroke === 'none' ? 0 : 1.2).attr('stroke-dasharray', s.dash)
+        .on('mouseenter', (ev) => showTip(html, ev)).on('mousemove', moveTip).on('mouseleave', hideTip);
+    }
+    // start
+    const sb = D.startBalance;
+    bar('start', 0, sb.value, 'estimated', segHTML('Starting point, ' + sb.label + ': past commitments not yet covered by taxes already collected', sb, 'estimated'));
+    svg.append('text').attr('class', 'lbl').attr('x', x('start') + x.bandwidth() / 2).attr('y', y(sb.value) + 16).attr('text-anchor', 'middle').text('≈' + fmt(sb.value));
+    bal.forEach((b) => {
+      const docHTML = '<div class="t">Running total, end of ' + b.year + ': documented amounts</div><div class="v">' + fmt2(b.documented) + '</div><div class="m">Starting point, plus each year\'s expected revenue, minus commitments with published figures: the FY2027 adopted budget, police station bond payments, and draft streets requests.</div>';
+      const assHTML = '<div class="t">Running total, end of ' + b.year + ': including FY2027-level assumptions</div><div class="v">' + fmt2(b.assumed) + '</div><div class="m">Also subtracts shelter operations, other projects and City Administration items, held at their FY2027 adopted amounts (no published figures for later years).</div>';
+      const ssHTML = '<div class="t">Running total, end of ' + b.year + ': with the hypothetical SSMP bond</div><div class="v">' + fmt2(b.ssmp) + '</div><div class="m">Adds $4.1M a year (range $3.7–4.5M) from FY2028.</div>';
+      bar(b.year, 0, b.documented, 'documented', docHTML);
+      bar(b.year, b.documented, b.assumed, 'assumed', assHTML);
+      if (showSSMP) bar(b.year, b.assumed, b.ssmp, 'hypothetical', ssHTML);
+      const end = showSSMP ? b.ssmp : b.assumed;
+      svg.append('text').attr('class', 'lbl').attr('x', x(b.year) + x.bandwidth() / 2).attr('y', y(end) + 16).attr('text-anchor', 'middle').style('font-weight', 600).text(fmt(end));
+      if (Math.abs(b.assumed - b.documented) > 0.5) {
+        svg.append('text').attr('class', 'lbl-sec').attr('x', x(b.year) + x.bandwidth() / 2).attr('y', y(b.documented) + 14).attr('text-anchor', 'middle').text(fmt(b.documented));
+      }
+    });
+  }
+
+  function buildTable() {
+    const bal = balances();
+    let h = '<table><thead><tr><th>$ millions</th>' + years.map((y) => '<th class="num">' + y + '</th>').join('') + '</tr></thead><tbody>';
+    h += '<tr><td><strong>Expected revenue</strong> (my estimate)</td>' + D.revenue.map((r) => '<td class="num">' + r.value.toFixed(1) + '</td>').join('') + '</tr>';
+    D.categories.forEach((c) => {
+      h += '<tr><td>' + c.label + '</td>' + c.values.map((v) => '<td class="num">' + v.value.toFixed(1) + (v.certainty === 'assumed' ? '*' : v.certainty === 'draft' ? '†' : '') + '</td>').join('') + '</tr>';
+    });
+    h += '<tr><td><strong>Left over</strong></td>' + years.map((y, i) => { const t = yearTotals(i); return '<td class="num"><strong>' + (D.revenue[i].value - t.documented - t.assumed).toFixed(1) + '</strong></td>'; }).join('') + '</tr>';
+    h += '<tr><td>SSMP Option 1 bond (hypothetical)</td>' + D.ssmp.values.map((v) => '<td class="num">' + (v.value ? '3.7–4.5' : '—') + '</td>').join('') + '</tr>';
+    h += '<tr><td><strong>Running total</strong>, documented only (start: ' + D.startBalance.value.toFixed(1) + ')</td>' + bal.map((b) => '<td class="num">' + b.documented.toFixed(1) + '</td>').join('') + '</tr>';
+    h += '<tr><td><strong>Running total</strong>, incl. assumptions</td>' + bal.map((b) => '<td class="num">' + b.assumed.toFixed(1) + '</td>').join('') + '</tr>';
+    h += '<tr><td><strong>Running total</strong>, incl. SSMP bond</td>' + bal.map((b) => '<td class="num">' + b.ssmp.toFixed(1) + '</td>').join('') + '</tr>';
+    h += '</tbody></table><p class="panel-sub">* Assumed: held at FY2027 adopted level. † Draft request (staff, TCC Oct 22, 2026).</p>';
+    document.getElementById('table-wrap').innerHTML = h;
+  }
+
+  function renderAll() { legends(); renderTop(); renderBottom(); buildTable(); }
+  renderAll();
+  document.getElementById('ssmp-toggle').addEventListener('change', (e) => { showSSMP = e.target.checked; renderTop(); renderBottom(); });
+  document.getElementById('toggle-table').addEventListener('click', (e) => {
+    const t = document.getElementById('table-wrap'), c = document.getElementById('charts');
+    const showTable = t.classList.contains('hidden');
+    t.classList.toggle('hidden', !showTable); c.classList.toggle('hidden', showTable);
+    e.target.textContent = showTable ? 'Show as chart' : 'Show as table';
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderAll);
+  new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>
+<script>
+/* Tells an embedding page (e.g. a Ghost iframe) how tall this chart is, so the frame can fit it. */
+(function () {
+  if (window.parent === window) return;
+  let last = 0;
+  const send = () => {
+    const h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "chart-height", height: h }, "*"); }
+  };
+  new ResizeObserver(send).observe(document.body);
+  window.addEventListener("load", send);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measure C Carry-Over</title>
+<style>
+.viz-root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --node-neutral: #52514e;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+    --text-muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --node-neutral: #c3c2b7;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9;
+  }
+}
+:root[data-theme="dark"] .viz-root {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface-1: #1a1a19; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+  --text-muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --node-neutral: #c3c2b7;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9;
+}
+html, body { margin: 0; }
+body { background: #f9f9f7; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) body { background: #0d0d0d; } }
+:root[data-theme="dark"] body { background: #0d0d0d; }
+.viz-root {
+  background: var(--page); color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh; padding: 24px 16px 40px; box-sizing: border-box;
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+.sub { color: var(--text-secondary); font-size: 14px; margin: 0 0 16px; line-height: 1.45; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.legend-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-bottom: 10px; font-size: 13px; color: var(--text-secondary); }
+.legend-row .title { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-right: 2px; }
+.legends { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 4px 32px; margin-bottom: 6px; }
+.legends .legend-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+.legend-row .li { display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
+.legend-row .li svg { flex: none; margin-top: 2px; }
+.legend-row .txt { display: block; }
+.cert svg { vertical-align: -4px; margin-right: 6px; }
+.controls { display: flex; justify-content: flex-end; gap: 8px; margin: 4px 0 6px; }
+button {
+  font: inherit; font-size: 13px; color: var(--text-primary); background: transparent;
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; cursor: pointer;
+}
+button:hover { background: var(--grid); }
+.chart { width: 100%; overflow-x: auto; }
+svg.sankey { display: block; width: 100%; min-width: 900px; height: auto; }
+.node-label { font-size: 12px; fill: var(--text-primary); paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; stroke-linejoin: round; }
+.node-value { font-size: 11px; fill: var(--text-secondary); paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; }
+.stage-cols { display: grid; min-width: 900px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); margin: 4px 0 6px; }
+.stage-cols .sh { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.stage-cols .sc1 { grid-column: 1; text-align: right; padding-right: 0; }
+.stage-cols .sc2 { grid-column: 3; text-align: center; justify-self: center; max-width: 290px; text-wrap: balance; }
+.stage-cols .sc1, .stage-cols .sc3 { text-wrap: balance; }
+.stage-cols .sc3 { grid-column: 5; }
+.stage-head { font-size: 11px; fill: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.qmark { font-size: 12px; font-weight: 600; fill: var(--text-secondary); }
+.link { cursor: pointer; transition: opacity .12s; }
+.dim .link:not(.hl) { opacity: .15; }
+.tooltip {
+  position: fixed; pointer-events: none; z-index: 10; max-width: 360px;
+  background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px; font-size: 12px; line-height: 1.45;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12); opacity: 0;
+}
+.tooltip .t { font-weight: 600; margin-bottom: 4px; }
+.tooltip .v { font-size: 14px; font-weight: 600; }
+.tooltip .m { color: var(--text-secondary); margin-top: 4px; }
+.tooltip .c { display: inline-block; font-size: 11px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+.notes { font-size: 13px; color: var(--text-secondary); margin-top: 14px; line-height: 1.5; }
+.notes li { margin-bottom: 3px; }
+.credit { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; padding: 8px 12px; border-left: 3px solid var(--axis); line-height: 1.45; }
+#notes { list-style: none; padding-left: 0; }
+#notes li { margin-bottom: 4px; }
+.est-h { font-size: 14px; font-weight: 600; margin: 16px 0 0; color: var(--text-primary); }
+table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 12px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--text-muted); font-weight: 600; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hidden { display: none; }
+
+.static .interactive-only, .static #toggle-table { display: none !important; }
+.static .ssmp-toggle input { display: none; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+<div class="wrap">
+  <h1 id="title"></h1>
+  <p class="sub">Measure C appropriations carried into FY2027 (as of July 1, 2026), in $ millions. Shapes drawn faded with dashed edges are my estimates from public documents, pending City figures. <span class="interactive-only">Hover any flow for its source and method.</span></p>
+  <p class="credit">Prepared by Stacy Rebich Hespanha, October 19, 2026. These figures are drawn from the public documents available to me, and several are my own estimates, marked as such. I welcome corrections and updated information or figures, and will log corrections at the bottom of future versions of these documents and tools.</p>
+  <div class="card">
+    <div class="legends">
+      <div class="legend-row" id="legend-groups"><span class="title">Project groups</span></div>
+      <div class="legend-row" id="legend-cert"><span class="title">How sure</span></div>
+    </div>
+    <div class="controls"><button id="toggle-table" type="button">Show as table</button></div>
+    <div class="chart" id="chart"></div>
+    <div id="table-wrap" class="hidden"></div>
+    <ul class="notes" id="notes"></ul>
+    <h2 class="est-h">How the estimates were made</h2>
+    <ul class="notes" id="est-notes"></ul>
+  </div>
+</div>
+<div class="tooltip" id="tip" role="tooltip"></div>
+</div>
+
+<script src="carryover_sankey_data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script>
+(function () {
+  const STATIC = new URLSearchParams(location.search).has('static');
+  if (STATIC) document.documentElement.classList.add('static');
+  const DATA = window.SANKEY_DATA;
+  const root = document.querySelector('.viz-root');
+  const css = (v) => getComputedStyle(root).getPropertyValue(v).trim();
+  const GROUP_SLOT = { g_police: 1, g_streets: 2, g_parks: 3, g_downtown: 4, g_buildings: 5, g_homeless: 6, g_equip: 7 };
+  const groupColor = (g) => css('--series-' + GROUP_SLOT[g]);
+  const CERT_LABEL = { reported: 'Reported', derived: 'From reported figures', estimated: 'My estimate', placeholder: 'Unknown' };
+  const fmt = (v) => '$' + (v >= 10 ? v.toFixed(1) : v >= 0.1 ? v.toFixed(2) : v.toFixed(3)) + 'M';
+  const tip = document.getElementById('tip');
+
+  document.getElementById('title').textContent = DATA.title;
+
+  // Notes
+  const notes = document.getElementById('notes');
+  DATA.notes.forEach((n) => { const li = document.createElement('li'); li.textContent = n; notes.appendChild(li); });
+  const estNotes = document.getElementById('est-notes');
+  (DATA.estimateNotes || []).forEach((n) => { const li = document.createElement('li'); li.textContent = n; estNotes.appendChild(li); });
+
+  // Legends
+  const lg = document.getElementById('legend-groups');
+  DATA.nodes.filter((n) => n.stage === 2).forEach((n) => {
+    const s = document.createElement('span'); s.className = 'li';
+    s.innerHTML = '<svg width="26" height="14"><rect class="sw" data-g="' + n.id + '" x="1" y="1" width="24" height="12" rx="2"/></svg><span class="txt">' + n.label + '</span>';
+    lg.appendChild(s);
+  });
+  const lc = document.getElementById('legend-cert');
+  const certSample = (kind) => {
+    const fillOp = kind === 'solid' ? 0.6 : kind === 'est' ? 0.25 : 0;
+    const dash = kind === 'est' ? '4 3' : kind === 'ph' ? '1.5 2.5' : null;
+    return '<svg width="26" height="14"><rect x="1" y="1" width="24" height="12" rx="2" fill="var(--node-neutral)" fill-opacity="' + fillOp + '"' +
+      (dash ? ' stroke="var(--node-neutral)" stroke-width="1.2" stroke-dasharray="' + dash + '"' : '') + '/></svg>';
+  };
+  [['solid', 'Reported, or summed from reported figures'], ['est', 'My estimate (range in tooltip)'], ['ph', 'Unknown: drawn thin and dotted, marked ?, not counted in totals']]
+    .forEach(([k, t]) => { const s = document.createElement('span'); s.className = 'li'; s.innerHTML = certSample(k) + '<span class="txt">' + t + '</span>'; lc.appendChild(s); });
+
+  function paintLegend() {
+    lg.querySelectorAll('.sw').forEach((el) => { el.setAttribute('fill', groupColor(el.dataset.g)); });
+  }
+
+  // Tooltip helpers
+  function showTip(html, ev) {
+    tip.innerHTML = html; tip.style.opacity = 1; moveTip(ev);
+  }
+  function moveTip(ev) {
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = ev.clientX + pad, y = ev.clientY + pad;
+    if (x + w > window.innerWidth - 8) x = ev.clientX - w - pad;
+    if (y + h > window.innerHeight - 8) y = ev.clientY - h - pad;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hideTip() { tip.style.opacity = 0; }
+
+  const nodeById = new Map(DATA.nodes.map((n) => [n.id, n]));
+  const linkHTML = (l) => {
+    const src = nodeById.get(l.source.id || l.source), tgt = nodeById.get(l.target.id || l.target);
+    const val = l.certainty === 'placeholder' ? 'Unknown' : (l.certainty === 'estimated' ? '≈' : '') + fmt(l.value);
+    const range = (l.low != null && l.high != null) ? '<div>Range: ' + fmt(l.low) + ' – ' + fmt(l.high) + '</div>' : '';
+    return '<div class="t">' + src.label + ' → ' + tgt.label + '</div>' +
+      '<div class="v">' + val + '<span class="c">' + CERT_LABEL[l.certainty] + '</span></div>' + range +
+      '<div class="m">' + l.basis + '</div>' + (l.ref && l.ref !== '—' ? '<div class="m">Source: ' + l.ref + '</div>' : '');
+  };
+  const nodeTotal = (n) => {
+    if (n.displayValue != null) return n.displayValue;
+    const inc = n.targetLinks.filter((l) => l.certainty !== 'placeholder').reduce((a, l) => a + l.value, 0);
+    const out = n.sourceLinks.filter((l) => l.certainty !== 'placeholder').reduce((a, l) => a + l.value, 0);
+    return Math.max(inc, out);
+  };
+  const nodeHTML = (n) => {
+    const tot = nodeTotal(n);
+    const val = n.certainty === 'placeholder' ? 'Unknown' : (n.certainty === 'estimated' ? '≈' : '') + fmt(tot);
+    return '<div class="t">' + n.label + (n.priority && n.priority !== '—' ? ' (Council priority ' + n.priority + ')' : '') + '</div>' +
+      '<div class="v">' + val + '<span class="c">' + CERT_LABEL[n.certainty] + '</span></div>';
+  };
+
+  // Table view
+  function buildTable() {
+    const wrap = document.getElementById('table-wrap');
+    let h = '<table><thead><tr><th>From</th><th>To</th><th class="num">$ millions</th><th class="num">Range</th><th>How sure</th><th>Method</th><th>Source</th></tr></thead><tbody>';
+    DATA.links.forEach((l) => {
+      h += '<tr><td>' + nodeById.get(l.source).label + '</td><td>' + nodeById.get(l.target).label + '</td><td class="num">' +
+        (l.certainty === 'placeholder' ? '?' : l.value.toFixed(2)) + '</td><td class="num">' +
+        (l.low != null ? l.low.toFixed(2) + '–' + l.high.toFixed(2) : '') + '</td><td>' + CERT_LABEL[l.certainty] + '</td><td>' + l.basis + '</td><td>' + (l.ref || '') + '</td></tr>';
+    });
+    wrap.innerHTML = h + '</tbody></table>';
+  }
+  buildTable();
+  document.getElementById('toggle-table').addEventListener('click', (e) => {
+    const t = document.getElementById('table-wrap'), c = document.getElementById('chart');
+    const showTable = t.classList.contains('hidden');
+    t.classList.toggle('hidden', !showTable); c.classList.toggle('hidden', showTable);
+    e.target.textContent = showTable ? 'Show as chart' : 'Show as table';
+  });
+
+  // Ribbon path for a link (filled shape, so it can carry a dashed outline)
+  function ribbon(l) {
+    const x0 = l.source.x1, x1 = l.target.x0, xm = (x0 + x1) / 2;
+    const w = (l.certainty === 'placeholder' ? Math.max(l.width, 5) : l.width) / 2;
+    const a0 = l.y0 - w, b0 = l.y0 + w, a1 = l.y1 - w, b1 = l.y1 + w;
+    return 'M' + x0 + ',' + a0 + 'C' + xm + ',' + a0 + ' ' + xm + ',' + a1 + ' ' + x1 + ',' + a1 +
+      'L' + x1 + ',' + b1 + 'C' + xm + ',' + b1 + ' ' + xm + ',' + b0 + ' ' + x0 + ',' + b0 + 'Z';
+  }
+
+  function render() {
+    paintLegend();
+    const W = 1150, H = 700, M = { top: 12, right: 290, bottom: 12, left: 240 };
+    const chart = document.getElementById('chart');
+    chart.innerHTML = '';
+    const svg = d3.select(chart).append('svg').attr('class', 'sankey').attr('viewBox', [0, 0, W, H])
+      .attr('role', 'img').attr('aria-label', DATA.title + ' Sankey diagram; use "Show as table" for the data.');
+
+    const sankey = d3.sankey()
+      .nodeId((d) => d.id)
+      .nodeAlign((d) => d.stage - 1)
+      .nodeWidth(14).nodePadding(24)
+      .nodeSort(null).linkSort(null)
+      .extent([[M.left, M.top], [W - M.right, H - M.bottom]]);
+    const graph = sankey({
+      nodes: DATA.nodes.map((d) => Object.assign({}, d)),
+      links: DATA.links.map((d) => Object.assign({}, d))
+    });
+
+    // Stage explanations, as HTML columns aligned with the diagram's three stages
+    const nx = (s) => graph.nodes.find((n) => n.stage === s);
+    const a = nx(1).x1 / W * 100, b = nx(2).x0 / W * 100, c = nx(3).x0 / W * 100;
+    const cols = document.createElement('div');
+    cols.className = 'stage-cols';
+    const m = (nx(2).x0 + nx(2).x1) / 2 / W * 100;             // center of the middle bars
+    const half = Math.min(m - a, c - m) * 0.72;                  // centered column width, with margins
+    cols.style.gridTemplateColumns = [a, m - half - a, 2 * half, c - (m + half), 100 - c].map((v) => v + '%').join(' ');
+    cols.innerHTML =
+      '<div class="sc sc1"><div class="sh">Collected?</div>Whether the money has been collected. Money not yet collected, and its flows, are drawn lighter.</div>' +
+      '<div class="sc sc2"><div class="sh">Committed to</div>The project groups it is committed to, in the order of the Council\'s Measure C priorities.</div>' +
+      '<div class="sc sc3"><div class="sh">Status</div>The status of each part. A question mark means no City document states that money is held for that purpose.</div>';
+    chart.insertBefore(cols, chart.firstChild);
+
+    const neutral = css('--node-neutral');
+    const linkColor = (l) => l.group ? groupColor(l.group) : neutral;
+
+    // Links
+    const gl = svg.append('g');
+    const links = gl.selectAll('path').data(graph.links).join('path')
+      .attr('class', 'link').attr('d', ribbon)
+      .attr('fill', (l) => linkColor(l))
+      .attr('fill-opacity', (l) => {
+        if (l.certainty === 'placeholder') return 0;
+        if (l.source.id === 's1_collected') return 0.40;   // collected: darker
+        if (l.source.id === 's1_future') return 0.14;      // not yet collected: lighter
+        return l.certainty === 'estimated' ? 0.28 : 0.6;   // stage 2 -> 3 flows mix both
+      })
+      .attr('stroke', (l) => linkColor(l))
+      .attr('stroke-opacity', (l) => l.certainty === 'reported' || l.certainty === 'derived' ? 0 : l.source.id === 's1_future' ? 0.55 : 0.85)
+      .attr('stroke-width', (l) => l.certainty === 'placeholder' ? 1.4 : 1)
+      .attr('stroke-dasharray', (l) => l.certainty === 'placeholder' ? '1.5 2.5' : l.certainty === 'estimated' ? '4 3' : null)
+      .on('mouseenter', function (ev, l) { svg.classed('dim', true); d3.select(this).classed('hl', true); showTip(linkHTML(l), ev); })
+      .on('mousemove', moveTip)
+      .on('mouseleave', function () { svg.classed('dim', false); d3.select(this).classed('hl', false); hideTip(); });
+
+    // Wider invisible hit targets for thin links
+    gl.selectAll('path.hit').data(graph.links.filter((l) => l.width < 6)).join('path')
+      .attr('class', 'hit').attr('d', (l) => d3.sankeyLinkHorizontal()(l))
+      .attr('fill', 'none').attr('stroke', 'transparent').attr('stroke-width', 10)
+      .on('mouseenter', (ev, l) => { svg.classed('dim', true); links.filter((d) => d === l).classed('hl', true); showTip(linkHTML(l), ev); })
+      .on('mousemove', moveTip)
+      .on('mouseleave', () => { svg.classed('dim', false); links.classed('hl', false); hideTip(); });
+
+    // Question marks on placeholder links
+    const qTargets = [...new Set(graph.links.filter((l) => l.certainty === 'placeholder').map((l) => l.target))];
+    svg.append('g').selectAll('text').data(qTargets).join('text')
+      .attr('class', 'qmark').attr('x', (n) => n.x0 - 8).attr('y', (n) => n.certainty === 'placeholder' ? (n.y0 + n.y1) / 2 + 4 : n.y1 + 2)
+      .attr('text-anchor', 'end').text('?');
+
+    // Nodes
+    const gn = svg.append('g');
+    gn.selectAll('rect').data(graph.nodes).join('rect')
+      .attr('x', (n) => n.x0).attr('width', (n) => n.x1 - n.x0)
+      .attr('y', (n) => n.certainty === 'placeholder' ? (n.y0 + n.y1) / 2 - 6 : n.y0)
+      .attr('height', (n) => n.certainty === 'placeholder' ? 12 : Math.max(2, n.y1 - n.y0)).attr('rx', 2)
+      .attr('fill', (n) => n.stage === 2 ? groupColor(n.id) : neutral)
+      .attr('fill-opacity', (n) => {
+        if (n.certainty === 'placeholder') return 0;
+        if (n.id === 's1_collected') return 0.55;   // collected: darker
+        if (n.id === 's1_future') return 0.18;      // not yet collected: lighter
+        return n.certainty === 'estimated' ? 0.3 : 0.9;
+      })
+      .attr('stroke', (n) => n.stage === 2 ? groupColor(n.id) : neutral)
+      .attr('stroke-opacity', (n) => n.id === 's1_future' ? 0.6 : n.certainty === 'estimated' || n.certainty === 'placeholder' ? 0.9 : 0)
+      .attr('stroke-dasharray', (n) => n.certainty === 'placeholder' ? '1.5 2.5' : n.certainty === 'estimated' ? '4 3' : null)
+      .attr('stroke-width', 1.2)
+      .on('mouseenter', (ev, n) => showTip(nodeHTML(n), ev))
+      .on('mousemove', moveTip).on('mouseleave', hideTip);
+
+    // Node labels: stage 1 to the left, stages 2 and 3 to the right
+    const lab = svg.append('g').selectAll('g').data(graph.nodes).join('g')
+      .attr('transform', (n) => {
+        const left = n.stage === 1;
+        return 'translate(' + (left ? n.x0 - 8 : n.x1 + 8) + ',' + ((n.y0 + n.y1) / 2) + ')';
+      });
+    lab.append('text').attr('class', 'node-label').attr('text-anchor', (n) => n.stage === 1 ? 'end' : 'start')
+      .attr('dy', '-0.15em').text((n) => n.shortLabel || n.label);
+    lab.append('text').attr('class', 'node-value').attr('text-anchor', (n) => n.stage === 1 ? 'end' : 'start')
+      .attr('dy', '1.05em').text((n) => {
+        if (n.certainty === 'placeholder') return '? unknown';
+        const t = nodeTotal(n);
+        return (n.certainty === 'estimated' ? '≈' : '') + fmt(t) + (n.certainty === 'estimated' ? ' (my estimate)' : '');
+      });
+  }
+
+  render();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>
+<script>
+/* Tells an embedding page (e.g. a Ghost iframe) how tall this chart is, so the frame can fit it. */
+(function () {
+  if (window.parent === window) return;
+  let last = 0;
+  const send = () => {
+    const h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "chart-height", height: h }, "*"); }
+  };
+  new ResizeObserver(send).observe(document.body);
+  window.addEventListener("load", send);
+})();
+</script>
+</body>
+</html>
